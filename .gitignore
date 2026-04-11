@@ -1,1 +1,4 @@
 bible-in-a-year-booklet.pdf
+node_modules/
+dist/
+.DS_Store
