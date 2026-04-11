@@ -14,6 +14,13 @@ import {
 const PLAN_START = '28 March 2026'
 const PLAN_END = '27 March 2027'
 
+// Format an "HH:MM" string explicitly as 24-hour (e.g. "08:00", "20:30")
+function format24h(time) {
+  if (!time) return ''
+  const [h, m] = time.split(':')
+  return `${h.padStart(2, '0')}:${m.padStart(2, '0')}`
+}
+
 async function init() {
   await registerServiceWorker()
 
@@ -119,8 +126,11 @@ function renderNotifications() {
             type="time"
             id="notif-time"
             value="${savedTime || '08:00'}"
-            class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-methodist-red"
+            step="60"
+            class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-methodist-red [&::-webkit-date-and-time-value]:text-left"
+            style="font-variant-numeric: tabular-nums;"
           />
+          <span class="text-xs text-gray-400">24hr</span>
         </div>
 
         <div class="flex gap-3">
@@ -135,7 +145,7 @@ function renderNotifications() {
         </div>
 
         <p id="notif-status" class="text-sm ${enabled ? 'text-green-600' : 'text-gray-400'}">
-          ${enabled ? `✓ Notifications enabled at ${savedTime}` : 'Notifications are off'}
+          ${enabled ? `✓ Notifications enabled at ${format24h(savedTime)}` : 'Notifications are off'}
         </p>
 
         <!-- iOS instructions -->
@@ -164,7 +174,7 @@ function renderNotifications() {
     if (enabled) {
       updateTime(e.target.value)
       document.getElementById('notif-status').textContent =
-        `✓ Notifications enabled at ${e.target.value}`
+        `✓ Notifications enabled at ${format24h(e.target.value)}`
     }
   })
 
