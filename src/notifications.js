@@ -98,11 +98,3 @@ function _todayKey() {
   return `${n.getFullYear()}-${n.getMonth() + 1}-${n.getDate()}`
 }
 
-export async function registerServiceWorker() {
-  if (!('serviceWorker' in navigator)) return
-  try {
-    await navigator.serviceWorker.register('./sw.js')
-  } catch (e) {
-    console.warn('SW registration failed:', e)
-  }
-}
