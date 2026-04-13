@@ -36,36 +36,53 @@ function isToday() {
     _viewDate.getDate() === t.getDate()
 }
 
+// Read the ?day= query param and return the corresponding Date, or null for today
+function dateFromQuery() {
+  const param = new URLSearchParams(window.location.search).get('day')
+  if (!param || param === 'today') return null
+  const reading = _readings.find(r => r.day === parseInt(param, 10))
+  if (!reading) return null
+  const parsed = reading._key.split('-').map(Number) // [year, month, day]
+  return new Date(parsed[0], parsed[1] - 1, parsed[2])
+}
+
+// Update _viewDate and push a new history entry
+function setViewDate(date) {
+  const t = new Date()
+  const isNowToday = !date || (
+    date.getFullYear() === t.getFullYear() &&
+    date.getMonth() === t.getMonth() &&
+    date.getDate() === t.getDate()
+  )
+  _viewDate = isNowToday ? null : date
+  const qs = _viewDate
+    ? `?day=${_readings.find(r => r._key === `${_viewDate.getFullYear()}-${_viewDate.getMonth() + 1}-${_viewDate.getDate()}`)?.day}`
+    : '?'
+  history.pushState(null, '', qs)
+}
+
 async function init() {
   _readings = await loadReadings()
+  _viewDate = dateFromQuery()
 
-  const today = findToday(_readings)
-  renderReading(today)
+  renderReading(findByDate(_readings, viewDate()))
   renderNav()
   renderNotifications()
   resumeSchedule()
-  showIfNotYetToday(today)
+  showIfNotYetToday(findToday(_readings))
+
+  window.addEventListener('popstate', () => {
+    _viewDate = dateFromQuery()
+    renderReading(findByDate(_readings, viewDate()))
+    renderNav()
+  })
 }
 
 function navigate(offsetDays) {
-  const base = viewDate()
-  const next = new Date(base)
+  const next = new Date(viewDate())
   next.setDate(next.getDate() + offsetDays)
-
-  // Clamp to plan bounds
-  if (next < PLAN_START) return
-  if (next > PLAN_END) return
-
-  // If navigating to today, clear the override
-  const t = new Date()
-  if (next.getFullYear() === t.getFullYear() &&
-      next.getMonth() === t.getMonth() &&
-      next.getDate() === t.getDate()) {
-    _viewDate = null
-  } else {
-    _viewDate = next
-  }
-
+  if (next < PLAN_START || next > PLAN_END) return
+  setViewDate(next)
   renderReading(findByDate(_readings, viewDate()))
   renderNav()
 }
@@ -74,18 +91,8 @@ function jumpToDate(dateStr) {
   // dateStr is "YYYY-MM-DD" from the date input
   const [y, m, d] = dateStr.split('-').map(Number)
   const target = new Date(y, m - 1, d)
-
   if (target < PLAN_START || target > PLAN_END) return
-
-  const t = new Date()
-  if (target.getFullYear() === t.getFullYear() &&
-      target.getMonth() === t.getMonth() &&
-      target.getDate() === t.getDate()) {
-    _viewDate = null
-  } else {
-    _viewDate = target
-  }
-
+  setViewDate(target)
   renderReading(findByDate(_readings, viewDate()))
   renderNav()
 }
@@ -125,19 +132,21 @@ function renderNav() {
         </svg>
       </button>
 
-      <button id="nav-today"
-        class="ml-auto text-xs font-medium transition-colors ${isToday() ? 'text-gray-300 cursor-default' : 'text-methodist-red hover:underline'}"
-        ${isToday() ? 'disabled' : ''}>
+      <a id="nav-today" href="?"
+        class="ml-auto text-xs font-medium transition-colors ${isToday() ? 'text-gray-300 pointer-events-none' : 'text-methodist-red hover:underline'}"
+        aria-disabled="${isToday()}">
         Go to today's reading
-      </button>
+      </a>
     </div>
   `
 
   document.getElementById('nav-prev')?.addEventListener('click', () => navigate(-1))
   document.getElementById('nav-next')?.addEventListener('click', () => navigate(+1))
   document.getElementById('nav-date')?.addEventListener('change', e => jumpToDate(e.target.value))
-  document.getElementById('nav-today')?.addEventListener('click', () => {
-    _viewDate = null
+  document.getElementById('nav-today')?.addEventListener('click', e => {
+    if (isToday()) return
+    e.preventDefault()
+    setViewDate(null)
     renderReading(findToday(_readings))
     renderNav()
   })
