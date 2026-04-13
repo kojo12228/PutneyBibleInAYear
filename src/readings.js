@@ -42,3 +42,8 @@ export function findToday(readings) {
   const key = todayKey()
   return readings.find(r => r._key === key) ?? null
 }
+
+export function findByDate(readings, date) {
+  const key = dateKey(date.getDate(), date.getMonth() + 1, date.getFullYear())
+  return readings.find(r => r._key === key) ?? null
+}

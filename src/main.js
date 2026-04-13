@@ -1,5 +1,5 @@
 import './style.css'
-import { loadReadings, findToday } from './readings.js'
+import { loadReadings, findToday, findByDate } from './readings.js'
 import {
   getSavedTime,
   isEnabled,
@@ -10,8 +10,8 @@ import {
   showIfNotYetToday,
 } from './notifications.js'
 
-const PLAN_START = '28 March 2026'
-const PLAN_END = '27 March 2027'
+const PLAN_START = new Date('2026-03-28')
+const PLAN_END = new Date('2027-03-27')
 
 // Format an "HH:MM" string explicitly as 24-hour (e.g. "08:00", "20:30")
 function format24h(time) {
@@ -20,22 +20,153 @@ function format24h(time) {
   return `${h.padStart(2, '0')}:${m.padStart(2, '0')}`
 }
 
-async function init() {
-  const readings = await loadReadings()
-  const today = findToday(readings)
+// Navigation state — null means "today"
+let _viewDate = null
+let _readings = []
 
-  renderReading(today)
-  renderNotifications()
-  resumeSchedule()
-  showIfNotYetToday(today)
-  updateTodayDate()
+function viewDate() {
+  return _viewDate ?? new Date()
 }
 
-function updateTodayDate() {
-  const el = document.getElementById('today-date')
-  if (!el) return
-  el.textContent = new Date().toLocaleDateString('en-GB', {
-    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+function isToday() {
+  if (!_viewDate) return true
+  const t = new Date()
+  return _viewDate.getFullYear() === t.getFullYear() &&
+    _viewDate.getMonth() === t.getMonth() &&
+    _viewDate.getDate() === t.getDate()
+}
+
+// Read the ?day= query param and return the corresponding Date, or null for today
+function dateFromQuery() {
+  const param = new URLSearchParams(window.location.search).get('day')
+  if (!param || param === 'today') return null
+  const reading = _readings.find(r => r.day === parseInt(param, 10))
+  if (!reading) return null
+  const parsed = reading._key.split('-').map(Number) // [year, month, day]
+  return new Date(parsed[0], parsed[1] - 1, parsed[2])
+}
+
+// Update _viewDate and push a new history entry
+function setViewDate(date) {
+  const t = new Date()
+  const isNowToday = !date || (
+    date.getFullYear() === t.getFullYear() &&
+    date.getMonth() === t.getMonth() &&
+    date.getDate() === t.getDate()
+  )
+  _viewDate = isNowToday ? null : date
+  const qs = _viewDate
+    ? `?day=${_readings.find(r => r._key === `${_viewDate.getFullYear()}-${_viewDate.getMonth() + 1}-${_viewDate.getDate()}`)?.day}`
+    : '?'
+  history.pushState(null, '', qs)
+}
+
+async function init() {
+  _readings = await loadReadings()
+  _viewDate = dateFromQuery()
+
+  renderReading(findByDate(_readings, viewDate()))
+  renderNav()
+  renderNotifications()
+  resumeSchedule()
+  showIfNotYetToday(findToday(_readings))
+
+  window.addEventListener('popstate', () => {
+    _viewDate = dateFromQuery()
+    renderReading(findByDate(_readings, viewDate()))
+    renderNav()
+  })
+}
+
+function navigate(offsetDays) {
+  const next = new Date(viewDate())
+  next.setDate(next.getDate() + offsetDays)
+  if (next < PLAN_START || next > PLAN_END) return
+  setViewDate(next)
+  renderReading(findByDate(_readings, viewDate()))
+  renderNav()
+}
+
+function jumpToDate(dateStr) {
+  // dateStr is "YYYY-MM-DD" from the date input
+  const [y, m, d] = dateStr.split('-').map(Number)
+  const target = new Date(y, m - 1, d)
+  if (target < PLAN_START || target > PLAN_END) return
+  setViewDate(target)
+  renderReading(findByDate(_readings, viewDate()))
+  renderNav()
+}
+
+function renderNav() {
+  const container = document.getElementById('day-nav')
+  if (!container) return
+
+  const current = viewDate()
+  const atStart = current <= PLAN_START
+  const atEnd = current >= PLAN_END
+
+  // Format date value for the input as YYYY-MM-DD
+  const pad = n => String(n).padStart(2, '0')
+  const inputVal = `${current.getFullYear()}-${pad(current.getMonth() + 1)}-${pad(current.getDate())}`
+  const minVal = `${PLAN_START.getFullYear()}-${pad(PLAN_START.getMonth() + 1)}-${pad(PLAN_START.getDate())}`
+  const maxVal = `${PLAN_END.getFullYear()}-${pad(PLAN_END.getMonth() + 1)}-${pad(PLAN_END.getDate())}`
+  const currentDay = findByDate(_readings, current)?.day ?? ''
+
+  container.innerHTML = `
+    <div class="flex items-center gap-2">
+      <button id="nav-prev" aria-label="Previous day"
+        class="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
+        ${atStart ? 'disabled' : ''}>
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+        </svg>
+      </button>
+
+      <div class="flex items-center gap-1.5">
+        <label class="sr-only" for="nav-day">Day number</label>
+        <input type="number" id="nav-day" value="${currentDay}" min="1" max="365"
+          class="w-16 text-sm text-center border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-methodist-red" />
+        <span class="text-gray-300 text-sm">/</span>
+        <label class="sr-only" for="nav-date">Date</label>
+        <input type="date" id="nav-date" value="${inputVal}" min="${minVal}" max="${maxVal}"
+          class="text-sm border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-methodist-red" />
+      </div>
+
+      <button id="nav-next" aria-label="Next day"
+        class="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
+        ${atEnd ? 'disabled' : ''}>
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+        </svg>
+      </button>
+
+      <a id="nav-today" href="?"
+        class="ml-auto text-xs font-medium transition-colors ${isToday() ? 'text-gray-300 pointer-events-none' : 'text-methodist-red hover:underline'}"
+        aria-disabled="${isToday()}">
+        Go to today's reading
+      </a>
+    </div>
+  `
+
+  document.getElementById('nav-prev')?.addEventListener('click', () => navigate(-1))
+  document.getElementById('nav-next')?.addEventListener('click', () => navigate(+1))
+  document.getElementById('nav-date')?.addEventListener('change', e => jumpToDate(e.target.value))
+  document.getElementById('nav-day')?.addEventListener('change', e => {
+    const day = parseInt(e.target.value, 10)
+    if (isNaN(day)) return
+    const reading = _readings.find(r => r.day === day)
+    if (!reading) return
+    const [y, m, d] = reading._key.split('-').map(Number)
+    setViewDate(new Date(y, m - 1, d))
+    renderReading(reading)
+    renderNav()
+  })
+  document.getElementById('nav-today')?.addEventListener('click', e => {
+    if (isToday()) return
+    e.preventDefault()
+    setViewDate(null)
+    renderReading(findToday(_readings))
+    renderNav()
   })
 }
 
@@ -43,17 +174,25 @@ function renderReading(reading) {
   const container = document.getElementById('reading-card')
   if (!container) return
 
+  // Update the reading card heading to show the viewed date
+  const el = document.getElementById('reading-heading')
+  if (el) {
+    el.textContent = isToday()
+      ? 'Today\'s Reading'
+      : viewDate().toLocaleDateString('en-GB', {
+          weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+        })
+  }
+
   if (!reading) {
-    const now = new Date()
-    const planStart = new Date('2026-03-28')
-    const planEnd = new Date('2027-03-27')
+    const now = viewDate()
     let message
-    if (now < planStart) {
-      message = `The reading plan begins on <strong>${PLAN_START}</strong>. See you then!`
-    } else if (now > planEnd) {
-      message = `The reading plan concluded on <strong>${PLAN_END}</strong>. Well done for completing the journey! 🎉`
+    if (now < PLAN_START) {
+      message = `The reading plan begins on <strong>28 March 2026</strong>. See you then!`
+    } else if (now > PLAN_END) {
+      message = `The reading plan concluded on <strong>27 March 2027</strong>. Well done for completing the journey!`
     } else {
-      message = `No reading found for today. Please check back tomorrow.`
+      message = `No reading found for this date.`
     }
     container.innerHTML = `
       <div class="text-center py-8 text-gray-500">
