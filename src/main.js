@@ -110,6 +110,7 @@ function renderNav() {
   const inputVal = `${current.getFullYear()}-${pad(current.getMonth() + 1)}-${pad(current.getDate())}`
   const minVal = `${PLAN_START.getFullYear()}-${pad(PLAN_START.getMonth() + 1)}-${pad(PLAN_START.getDate())}`
   const maxVal = `${PLAN_END.getFullYear()}-${pad(PLAN_END.getMonth() + 1)}-${pad(PLAN_END.getDate())}`
+  const currentDay = findByDate(_readings, current)?.day ?? ''
 
   container.innerHTML = `
     <div class="flex items-center gap-2">
@@ -121,8 +122,15 @@ function renderNav() {
         </svg>
       </button>
 
-      <input type="date" id="nav-date" value="${inputVal}" min="${minVal}" max="${maxVal}"
-        class="text-sm border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-methodist-red" />
+      <div class="flex items-center gap-1.5">
+        <label class="sr-only" for="nav-day">Day number</label>
+        <input type="number" id="nav-day" value="${currentDay}" min="1" max="365"
+          class="w-16 text-sm text-center border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-methodist-red" />
+        <span class="text-gray-300 text-sm">/</span>
+        <label class="sr-only" for="nav-date">Date</label>
+        <input type="date" id="nav-date" value="${inputVal}" min="${minVal}" max="${maxVal}"
+          class="text-sm border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-methodist-red" />
+      </div>
 
       <button id="nav-next" aria-label="Next day"
         class="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
@@ -143,6 +151,16 @@ function renderNav() {
   document.getElementById('nav-prev')?.addEventListener('click', () => navigate(-1))
   document.getElementById('nav-next')?.addEventListener('click', () => navigate(+1))
   document.getElementById('nav-date')?.addEventListener('change', e => jumpToDate(e.target.value))
+  document.getElementById('nav-day')?.addEventListener('change', e => {
+    const day = parseInt(e.target.value, 10)
+    if (isNaN(day)) return
+    const reading = _readings.find(r => r.day === day)
+    if (!reading) return
+    const [y, m, d] = reading._key.split('-').map(Number)
+    setViewDate(new Date(y, m - 1, d))
+    renderReading(reading)
+    renderNav()
+  })
   document.getElementById('nav-today')?.addEventListener('click', e => {
     if (isToday()) return
     e.preventDefault()
