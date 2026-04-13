@@ -125,11 +125,11 @@ function renderNav() {
         </svg>
       </button>
 
-      ${!isToday() ? `
-        <button id="nav-today"
-          class="ml-auto text-xs font-medium text-methodist-red hover:underline">
-          Today
-        </button>` : ''}
+      <button id="nav-today"
+        class="ml-auto text-xs font-medium transition-colors ${isToday() ? 'text-gray-300 cursor-default' : 'text-methodist-red hover:underline'}"
+        ${isToday() ? 'disabled' : ''}>
+        Go to today's reading
+      </button>
     </div>
   `
 
