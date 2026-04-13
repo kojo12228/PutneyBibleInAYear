@@ -1,7 +1,6 @@
 import './style.css'
 import { loadReadings, findToday } from './readings.js'
 import {
-  registerServiceWorker,
   getSavedTime,
   isEnabled,
   enable,
@@ -22,8 +21,6 @@ function format24h(time) {
 }
 
 async function init() {
-  await registerServiceWorker()
-
   const readings = await loadReadings()
   const today = findToday(readings)
 
