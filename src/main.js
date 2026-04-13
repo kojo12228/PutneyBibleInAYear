@@ -1,7 +1,6 @@
 import './style.css'
 import { loadReadings, findToday } from './readings.js'
 import {
-  registerServiceWorker,
   getSavedTime,
   isEnabled,
   enable,
@@ -22,8 +21,6 @@ function format24h(time) {
 }
 
 async function init() {
-  await registerServiceWorker()
-
   const readings = await loadReadings()
   const today = findToday(readings)
 
@@ -91,7 +88,7 @@ function renderReading(reading) {
       <div class="mt-4 pt-4 border-t border-gray-100 flex items-center gap-2 text-sm text-gray-500">
         <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M15.536 8.464a5 5 0 010 7.072M12 6v12m0 0l-3-3m3 3l3-3M6.464 8.464a9 9 0 000 12.728"/>
+            d="M11 5L6 9H2v6h4l5 4V5zM15.536 8.464a5 5 0 010 7.072M19.07 4.929a10 10 0 010 14.142"/>
         </svg>
         <span>Audio Bible ref: <strong>${reading.audioRef}</strong>
           &nbsp;·&nbsp; NIV read by David Suchet (Bible in One Year — Audible)
