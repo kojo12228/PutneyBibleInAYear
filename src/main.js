@@ -174,12 +174,14 @@ function renderReading(reading) {
   const container = document.getElementById('reading-card')
   if (!container) return
 
-  // Update the date display to match the viewed day
-  const el = document.getElementById('today-date')
+  // Update the reading card heading to show the viewed date
+  const el = document.getElementById('reading-heading')
   if (el) {
-    el.textContent = viewDate().toLocaleDateString('en-GB', {
-      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
-    })
+    el.textContent = isToday()
+      ? 'Today\'s Reading'
+      : viewDate().toLocaleDateString('en-GB', {
+          weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+        })
   }
 
   if (!reading) {
