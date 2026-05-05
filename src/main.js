@@ -20,6 +20,41 @@ function format24h(time) {
   return `${h.padStart(2, '0')}:${m.padStart(2, '0')}`
 }
 
+function ordinal(n) {
+  if (n >= 11 && n <= 13) return `${n}th`
+  switch (n % 10) {
+    case 1: return `${n}st`
+    case 2: return `${n}nd`
+    case 3: return `${n}rd`
+    default: return `${n}th`
+  }
+}
+
+function buildSummary(reading) {
+  const [dayStr, monthStr] = reading.date.trim().split(' ')
+  const header = reading.audioRef
+    ? `${ordinal(parseInt(dayStr, 10))} ${monthStr} (audio Bible ref: ${reading.audioRef})`
+    : `${ordinal(parseInt(dayStr, 10))} ${monthStr}`
+  return `${header}\n\n${reading.ot}\n${reading.psalmProverb}\n${reading.nt}`
+}
+
+async function copyToClipboard(text, btn) {
+  try {
+    await navigator.clipboard.writeText(text)
+  } catch {
+    return
+  }
+  const original = btn.innerHTML
+  btn.innerHTML = `<svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>`
+  btn.disabled = true
+  setTimeout(() => {
+    btn.innerHTML = original
+    btn.disabled = false
+  }, 1500)
+}
+
+const CLIPBOARD_SVG = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>`
+
 // Navigation state — null means "today"
 let _viewDate = null
 let _readings = []
@@ -174,7 +209,6 @@ function renderReading(reading) {
   const container = document.getElementById('reading-card')
   if (!container) return
 
-  // Update the reading card heading to show the viewed date
   const el = document.getElementById('reading-heading')
   if (el) {
     el.textContent = isToday()
@@ -182,6 +216,17 @@ function renderReading(reading) {
       : viewDate().toLocaleDateString('en-GB', {
           weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
         })
+  }
+
+  const copyAllBtn = document.getElementById('copy-all')
+  if (copyAllBtn) {
+    if (!reading) {
+      copyAllBtn.classList.add('hidden')
+      copyAllBtn.onclick = null
+    } else {
+      copyAllBtn.classList.remove('hidden')
+      copyAllBtn.onclick = e => copyToClipboard(buildSummary(reading), e.currentTarget)
+    }
   }
 
   if (!reading) {
@@ -209,22 +254,37 @@ function renderReading(reading) {
       </div>
 
       <div class="reading-row">
-        <div class="reading-label">Old Testament</div>
-        <div class="reading-passage">${reading.ot}</div>
+        <div class="flex items-start gap-2">
+          <div class="flex-1">
+            <div class="reading-label">Old Testament</div>
+            <div class="reading-passage">${reading.ot}</div>
+          </div>
+          <button id="copy-ot" class="shrink-0 mt-0.5 p-1 rounded text-gray-400 hover:text-gray-600 transition-colors cursor-pointer" aria-label="Copy Old Testament reading">${CLIPBOARD_SVG}</button>
+        </div>
       </div>
 
       <div class="reading-row">
-        <div class="reading-label">Psalm / Proverb</div>
-        <div class="reading-passage">${reading.psalmProverb}</div>
+        <div class="flex items-start gap-2">
+          <div class="flex-1">
+            <div class="reading-label">Psalm / Proverb</div>
+            <div class="reading-passage">${reading.psalmProverb}</div>
+          </div>
+          <button id="copy-psalm" class="shrink-0 mt-0.5 p-1 rounded text-gray-400 hover:text-gray-600 transition-colors cursor-pointer" aria-label="Copy Psalm / Proverb reading">${CLIPBOARD_SVG}</button>
+        </div>
       </div>
 
       <div class="reading-row">
-        <div class="reading-label">New Testament</div>
-        <div class="reading-passage">${reading.nt}</div>
+        <div class="flex items-start gap-2">
+          <div class="flex-1">
+            <div class="reading-label">New Testament</div>
+            <div class="reading-passage">${reading.nt}</div>
+          </div>
+          <button id="copy-nt" class="shrink-0 mt-0.5 p-1 rounded text-gray-400 hover:text-gray-600 transition-colors cursor-pointer" aria-label="Copy New Testament reading">${CLIPBOARD_SVG}</button>
+        </div>
       </div>
 
       ${reading.audioRef ? `
-      <div class="mt-4 pt-4 border-t border-gray-100 flex items-center gap-2 text-sm text-gray-500">
+      <div class="pt-2 border-t border-gray-100 flex items-center gap-2 text-sm text-gray-500">
         <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M11 5L6 9H2v6h4l5 4V5zM15.536 8.464a5 5 0 010 7.072M19.07 4.929a10 10 0 010 14.142"/>
@@ -234,6 +294,10 @@ function renderReading(reading) {
         </span>
       </div>` : ''}
     </div>`
+
+  document.getElementById('copy-ot')?.addEventListener('click', e => copyToClipboard(reading.ot, e.currentTarget))
+  document.getElementById('copy-psalm')?.addEventListener('click', e => copyToClipboard(reading.psalmProverb, e.currentTarget))
+  document.getElementById('copy-nt')?.addEventListener('click', e => copyToClipboard(reading.nt, e.currentTarget))
 }
 
 function renderNotifications() {
