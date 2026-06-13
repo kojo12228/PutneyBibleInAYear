@@ -8,7 +8,7 @@ export default defineConfig({
     VitePWA({
       strategies: 'injectManifest',
       srcDir: 'src',
-      filename: 'sw.js',
+      filename: 'sw.ts',
       injectRegister: 'auto',
       manifest: false, // we manage manifest.webmanifest ourselves in public/
       devOptions: {
