@@ -1,7 +1,7 @@
 import { loadReadings, findToday } from './readings'
 import type { Reading } from './types'
 
-const KEY_TIME = 'notifTime'       // stored as "HH:MM"
+const KEY_TIME = 'notifTime' // stored as "HH:MM"
 const KEY_LAST = 'lastNotifiedDay' // stored as "YYYY-M-D"
 
 let _scheduleTimer: ReturnType<typeof setTimeout> | null = null

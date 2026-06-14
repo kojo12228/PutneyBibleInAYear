@@ -1,9 +1,18 @@
 import type { Reading } from './types'
 
 const MONTHS: Record<string, number> = {
-  January: 1, February: 2, March: 3, April: 4,
-  May: 5, June: 6, July: 7, August: 8,
-  September: 9, October: 10, November: 11, December: 12,
+  January: 1,
+  February: 2,
+  March: 3,
+  April: 4,
+  May: 5,
+  June: 6,
+  July: 7,
+  August: 8,
+  September: 9,
+  October: 10,
+  November: 11,
+  December: 12,
 }
 
 function parseCsvDate(str: string): { day: number; month: number; year: number } {
@@ -24,7 +33,7 @@ export async function loadReadings(): Promise<Reading[]> {
   const res = await fetch('./readings.csv')
   const text = await res.text()
   const lines = text.trim().split('\n').slice(1) // skip header row
-  return lines.map(line => {
+  return lines.map((line) => {
     const [day, date, dayOfWeek, ot, psalmProverb, nt, audioRef] = line.split(',')
     const parsed = parseCsvDate(date)
     return {
@@ -42,10 +51,10 @@ export async function loadReadings(): Promise<Reading[]> {
 
 export function findToday(readings: Reading[]): Reading | null {
   const key = todayKey()
-  return readings.find(r => r._key === key) ?? null
+  return readings.find((r) => r._key === key) ?? null
 }
 
 export function findByDate(readings: Reading[], date: Date): Reading | null {
   const key = dateKey(date.getDate(), date.getMonth() + 1, date.getFullYear())
-  return readings.find(r => r._key === key) ?? null
+  return readings.find((r) => r._key === key) ?? null
 }

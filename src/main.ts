@@ -24,10 +24,14 @@ function format24h(time: string | null): string {
 function ordinal(n: number): string {
   if (n >= 11 && n <= 13) return `${n}th`
   switch (n % 10) {
-    case 1: return `${n}st`
-    case 2: return `${n}nd`
-    case 3: return `${n}rd`
-    default: return `${n}th`
+    case 1:
+      return `${n}st`
+    case 2:
+      return `${n}nd`
+    case 3:
+      return `${n}rd`
+    default:
+      return `${n}th`
   }
 }
 
@@ -67,16 +71,18 @@ function viewDate(): Date {
 function isToday(): boolean {
   if (!_viewDate) return true
   const t = new Date()
-  return _viewDate.getFullYear() === t.getFullYear() &&
+  return (
+    _viewDate.getFullYear() === t.getFullYear() &&
     _viewDate.getMonth() === t.getMonth() &&
     _viewDate.getDate() === t.getDate()
+  )
 }
 
 // Read the ?day= query param and return the corresponding Date, or null for today
 function dateFromQuery(): Date | null {
   const param = new URLSearchParams(window.location.search).get('day')
   if (!param || param === 'today') return null
-  const reading = _readings.find(r => r.day === parseInt(param, 10))
+  const reading = _readings.find((r) => r.day === parseInt(param, 10))
   if (!reading) return null
   const parsed = reading._key.split('-').map(Number) // [year, month, day]
   return new Date(parsed[0], parsed[1] - 1, parsed[2])
@@ -85,14 +91,14 @@ function dateFromQuery(): Date | null {
 // Update _viewDate and push a new history entry
 function setViewDate(date: Date | null): void {
   const t = new Date()
-  const isNowToday = !date || (
-    date.getFullYear() === t.getFullYear() &&
-    date.getMonth() === t.getMonth() &&
-    date.getDate() === t.getDate()
-  )
+  const isNowToday =
+    !date ||
+    (date.getFullYear() === t.getFullYear() &&
+      date.getMonth() === t.getMonth() &&
+      date.getDate() === t.getDate())
   _viewDate = isNowToday ? null : date
   const qs = _viewDate
-    ? `?day=${_readings.find(r => r._key === `${_viewDate!.getFullYear()}-${_viewDate!.getMonth() + 1}-${_viewDate!.getDate()}`)?.day}`
+    ? `?day=${_readings.find((r) => r._key === `${_viewDate!.getFullYear()}-${_viewDate!.getMonth() + 1}-${_viewDate!.getDate()}`)?.day}`
     : '?'
   history.pushState(null, '', qs)
 }
@@ -186,18 +192,20 @@ function renderNav(): void {
 
   document.getElementById('nav-prev')?.addEventListener('click', () => navigate(-1))
   document.getElementById('nav-next')?.addEventListener('click', () => navigate(+1))
-  document.getElementById('nav-date')?.addEventListener('change', e => jumpToDate((e.target as HTMLInputElement).value))
-  document.getElementById('nav-day')?.addEventListener('change', e => {
+  document
+    .getElementById('nav-date')
+    ?.addEventListener('change', (e) => jumpToDate((e.target as HTMLInputElement).value))
+  document.getElementById('nav-day')?.addEventListener('change', (e) => {
     const day = parseInt((e.target as HTMLInputElement).value, 10)
     if (isNaN(day)) return
-    const reading = _readings.find(r => r.day === day)
+    const reading = _readings.find((r) => r.day === day)
     if (!reading) return
     const [y, m, d] = reading._key.split('-').map(Number)
     setViewDate(new Date(y, m - 1, d))
     renderReading(reading)
     renderNav()
   })
-  document.getElementById('nav-today')?.addEventListener('click', e => {
+  document.getElementById('nav-today')?.addEventListener('click', (e) => {
     if (isToday()) return
     e.preventDefault()
     setViewDate(null)
@@ -213,9 +221,12 @@ function renderReading(reading: Reading | null): void {
   const el = document.getElementById('reading-heading')
   if (el) {
     el.textContent = isToday()
-      ? 'Today\'s Reading'
+      ? "Today's Reading"
       : viewDate().toLocaleDateString('en-GB', {
-          weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+          weekday: 'long',
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
         })
   }
 
@@ -227,7 +238,8 @@ function renderReading(reading: Reading | null): void {
       btn.onclick = null
     } else {
       btn.classList.remove('hidden')
-      btn.onclick = e => copyToClipboard(buildSummary(reading), e.currentTarget as HTMLButtonElement)
+      btn.onclick = (e) =>
+        copyToClipboard(buildSummary(reading), e.currentTarget as HTMLButtonElement)
     }
   }
 
@@ -285,7 +297,9 @@ function renderReading(reading: Reading | null): void {
         </div>
       </div>
 
-      ${reading.audioRef ? `
+      ${
+        reading.audioRef
+          ? `
       <div class="pt-2 border-t border-gray-100 flex items-center gap-2 text-sm text-gray-500">
         <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -294,12 +308,26 @@ function renderReading(reading: Reading | null): void {
         <span>Audio Bible ref: <strong>${reading.audioRef}</strong>
           &nbsp;·&nbsp; NIV read by David Suchet (Bible in One Year — Audible)
         </span>
-      </div>` : ''}
+      </div>`
+          : ''
+      }
     </div>`
 
-  document.getElementById('copy-ot')?.addEventListener('click', e => copyToClipboard(reading.ot, e.currentTarget as HTMLButtonElement))
-  document.getElementById('copy-psalm')?.addEventListener('click', e => copyToClipboard(reading.psalmProverb, e.currentTarget as HTMLButtonElement))
-  document.getElementById('copy-nt')?.addEventListener('click', e => copyToClipboard(reading.nt, e.currentTarget as HTMLButtonElement))
+  document
+    .getElementById('copy-ot')
+    ?.addEventListener('click', (e) =>
+      copyToClipboard(reading.ot, e.currentTarget as HTMLButtonElement)
+    )
+  document
+    .getElementById('copy-psalm')
+    ?.addEventListener('click', (e) =>
+      copyToClipboard(reading.psalmProverb, e.currentTarget as HTMLButtonElement)
+    )
+  document
+    .getElementById('copy-nt')
+    ?.addEventListener('click', (e) =>
+      copyToClipboard(reading.nt, e.currentTarget as HTMLButtonElement)
+    )
 }
 
 function renderNotifications(): void {
@@ -313,12 +341,18 @@ function renderNotifications(): void {
   section.innerHTML = `
     <h2 class="text-lg font-semibold text-gray-800 mb-4">Daily Notifications</h2>
 
-    ${!notifSupported ? `
+    ${
+      !notifSupported
+        ? `
       <p class="text-sm text-amber-700 bg-amber-50 rounded-lg p-3">
         Notifications are not supported in this browser.
-      </p>` : ''}
+      </p>`
+        : ''
+    }
 
-    ${notifSupported ? `
+    ${
+      notifSupported
+        ? `
       <div class="space-y-4">
         <div class="flex items-center gap-4">
           <label class="text-sm font-medium text-gray-700 w-28 shrink-0" for="notif-time">
@@ -367,16 +401,19 @@ function renderNotifications(): void {
           </div>
         </details>
       </div>
-    ` : ''}
+    `
+        : ''
+    }
   `
 
   if (!notifSupported) return
 
-  document.getElementById('notif-time')?.addEventListener('change', e => {
+  document.getElementById('notif-time')?.addEventListener('change', (e) => {
     if (enabled) {
       updateTime((e.target as HTMLInputElement).value)
       const status = document.getElementById('notif-status')
-      if (status) status.textContent = `✓ Notifications enabled at ${format24h((e.target as HTMLInputElement).value)}`
+      if (status)
+        status.textContent = `✓ Notifications enabled at ${format24h((e.target as HTMLInputElement).value)}`
     }
   })
 
@@ -388,7 +425,8 @@ function renderNotifications(): void {
     } else if (result.reason === 'denied') {
       const status = document.getElementById('notif-status')
       if (status) {
-        status.textContent = '⚠️ Permission denied. Please allow notifications in your browser settings.'
+        status.textContent =
+          '⚠️ Permission denied. Please allow notifications in your browser settings.'
         status.className = 'text-sm text-amber-600'
       }
     }
