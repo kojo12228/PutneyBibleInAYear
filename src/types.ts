@@ -5,6 +5,6 @@ export interface Reading {
   ot: string
   psalmProverb: string
   nt: string
-  audioRef: string | undefined
+  audioRef: string
   _key: string
 }

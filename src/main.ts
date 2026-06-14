@@ -39,7 +39,7 @@ function buildSummary(reading: Reading): string {
   return `${header}\n\n${reading.ot}\n${reading.psalmProverb}\n${reading.nt}`
 }
 
-async function copyToClipboard(text: string, btn: HTMLElement): Promise<void> {
+async function copyToClipboard(text: string, btn: HTMLButtonElement): Promise<void> {
   try {
     await navigator.clipboard.writeText(text)
   } catch {
@@ -47,10 +47,10 @@ async function copyToClipboard(text: string, btn: HTMLElement): Promise<void> {
   }
   const original = btn.innerHTML
   btn.innerHTML = `<svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>`
-  ;(btn as HTMLButtonElement).disabled = true
+  btn.disabled = true
   setTimeout(() => {
     btn.innerHTML = original
-    ;(btn as HTMLButtonElement).disabled = false
+    btn.disabled = false
   }, 1500)
 }
 
@@ -221,12 +221,13 @@ function renderReading(reading: Reading | null): void {
 
   const copyAllBtn = document.getElementById('copy-all')
   if (copyAllBtn) {
+    const btn = copyAllBtn as HTMLButtonElement
     if (!reading) {
-      copyAllBtn.classList.add('hidden')
-      ;(copyAllBtn as HTMLButtonElement).onclick = null
+      btn.classList.add('hidden')
+      btn.onclick = null
     } else {
-      copyAllBtn.classList.remove('hidden')
-      ;(copyAllBtn as HTMLButtonElement).onclick = e => copyToClipboard(buildSummary(reading), e.currentTarget as HTMLElement)
+      btn.classList.remove('hidden')
+      btn.onclick = e => copyToClipboard(buildSummary(reading), e.currentTarget as HTMLButtonElement)
     }
   }
 
@@ -296,9 +297,9 @@ function renderReading(reading: Reading | null): void {
       </div>` : ''}
     </div>`
 
-  document.getElementById('copy-ot')?.addEventListener('click', e => copyToClipboard(reading.ot, e.currentTarget as HTMLElement))
-  document.getElementById('copy-psalm')?.addEventListener('click', e => copyToClipboard(reading.psalmProverb, e.currentTarget as HTMLElement))
-  document.getElementById('copy-nt')?.addEventListener('click', e => copyToClipboard(reading.nt, e.currentTarget as HTMLElement))
+  document.getElementById('copy-ot')?.addEventListener('click', e => copyToClipboard(reading.ot, e.currentTarget as HTMLButtonElement))
+  document.getElementById('copy-psalm')?.addEventListener('click', e => copyToClipboard(reading.psalmProverb, e.currentTarget as HTMLButtonElement))
+  document.getElementById('copy-nt')?.addEventListener('click', e => copyToClipboard(reading.nt, e.currentTarget as HTMLButtonElement))
 }
 
 function renderNotifications(): void {

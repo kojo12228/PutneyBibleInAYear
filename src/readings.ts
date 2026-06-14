@@ -34,7 +34,7 @@ export async function loadReadings(): Promise<Reading[]> {
       ot,
       psalmProverb,
       nt,
-      audioRef: audioRef?.trim(),
+      audioRef: audioRef.trim(),
       _key: dateKey(parsed.day, parsed.month, parsed.year),
     }
   })
