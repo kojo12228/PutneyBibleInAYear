@@ -1,5 +1,5 @@
 import './style.css'
-import { loadReadings, findToday, findByDate } from './readings.js'
+import { loadReadings, findToday, findByDate } from './readings'
 import {
   getSavedTime,
   isEnabled,
@@ -8,19 +8,20 @@ import {
   updateTime,
   resumeSchedule,
   showIfNotYetToday,
-} from './notifications.js'
+} from './notifications'
+import type { Reading } from './types'
 
 const PLAN_START = new Date('2026-03-28')
 const PLAN_END = new Date('2027-03-27')
 
 // Format an "HH:MM" string explicitly as 24-hour (e.g. "08:00", "20:30")
-function format24h(time) {
+function format24h(time: string | null): string {
   if (!time) return ''
   const [h, m] = time.split(':')
   return `${h.padStart(2, '0')}:${m.padStart(2, '0')}`
 }
 
-function ordinal(n) {
+function ordinal(n: number): string {
   if (n >= 11 && n <= 13) return `${n}th`
   switch (n % 10) {
     case 1: return `${n}st`
@@ -30,7 +31,7 @@ function ordinal(n) {
   }
 }
 
-function buildSummary(reading) {
+function buildSummary(reading: Reading): string {
   const [dayStr, monthStr] = reading.date.trim().split(' ')
   const header = reading.audioRef
     ? `${ordinal(parseInt(dayStr, 10))} ${monthStr} (audio Bible ref: ${reading.audioRef})`
@@ -38,7 +39,7 @@ function buildSummary(reading) {
   return `${header}\n\n${reading.ot}\n${reading.psalmProverb}\n${reading.nt}`
 }
 
-async function copyToClipboard(text, btn) {
+async function copyToClipboard(text: string, btn: HTMLButtonElement): Promise<void> {
   try {
     await navigator.clipboard.writeText(text)
   } catch {
@@ -56,14 +57,14 @@ async function copyToClipboard(text, btn) {
 const CLIPBOARD_SVG = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>`
 
 // Navigation state — null means "today"
-let _viewDate = null
-let _readings = []
+let _viewDate: Date | null = null
+let _readings: Reading[] = []
 
-function viewDate() {
+function viewDate(): Date {
   return _viewDate ?? new Date()
 }
 
-function isToday() {
+function isToday(): boolean {
   if (!_viewDate) return true
   const t = new Date()
   return _viewDate.getFullYear() === t.getFullYear() &&
@@ -72,7 +73,7 @@ function isToday() {
 }
 
 // Read the ?day= query param and return the corresponding Date, or null for today
-function dateFromQuery() {
+function dateFromQuery(): Date | null {
   const param = new URLSearchParams(window.location.search).get('day')
   if (!param || param === 'today') return null
   const reading = _readings.find(r => r.day === parseInt(param, 10))
@@ -82,7 +83,7 @@ function dateFromQuery() {
 }
 
 // Update _viewDate and push a new history entry
-function setViewDate(date) {
+function setViewDate(date: Date | null): void {
   const t = new Date()
   const isNowToday = !date || (
     date.getFullYear() === t.getFullYear() &&
@@ -91,12 +92,12 @@ function setViewDate(date) {
   )
   _viewDate = isNowToday ? null : date
   const qs = _viewDate
-    ? `?day=${_readings.find(r => r._key === `${_viewDate.getFullYear()}-${_viewDate.getMonth() + 1}-${_viewDate.getDate()}`)?.day}`
+    ? `?day=${_readings.find(r => r._key === `${_viewDate!.getFullYear()}-${_viewDate!.getMonth() + 1}-${_viewDate!.getDate()}`)?.day}`
     : '?'
   history.pushState(null, '', qs)
 }
 
-async function init() {
+async function init(): Promise<void> {
   _readings = await loadReadings()
   _viewDate = dateFromQuery()
 
@@ -113,7 +114,7 @@ async function init() {
   })
 }
 
-function navigate(offsetDays) {
+function navigate(offsetDays: number): void {
   const next = new Date(viewDate())
   next.setDate(next.getDate() + offsetDays)
   if (next < PLAN_START || next > PLAN_END) return
@@ -122,7 +123,7 @@ function navigate(offsetDays) {
   renderNav()
 }
 
-function jumpToDate(dateStr) {
+function jumpToDate(dateStr: string): void {
   // dateStr is "YYYY-MM-DD" from the date input
   const [y, m, d] = dateStr.split('-').map(Number)
   const target = new Date(y, m - 1, d)
@@ -132,7 +133,7 @@ function jumpToDate(dateStr) {
   renderNav()
 }
 
-function renderNav() {
+function renderNav(): void {
   const container = document.getElementById('day-nav')
   if (!container) return
 
@@ -141,7 +142,7 @@ function renderNav() {
   const atEnd = current >= PLAN_END
 
   // Format date value for the input as YYYY-MM-DD
-  const pad = n => String(n).padStart(2, '0')
+  const pad = (n: number) => String(n).padStart(2, '0')
   const inputVal = `${current.getFullYear()}-${pad(current.getMonth() + 1)}-${pad(current.getDate())}`
   const minVal = `${PLAN_START.getFullYear()}-${pad(PLAN_START.getMonth() + 1)}-${pad(PLAN_START.getDate())}`
   const maxVal = `${PLAN_END.getFullYear()}-${pad(PLAN_END.getMonth() + 1)}-${pad(PLAN_END.getDate())}`
@@ -185,9 +186,9 @@ function renderNav() {
 
   document.getElementById('nav-prev')?.addEventListener('click', () => navigate(-1))
   document.getElementById('nav-next')?.addEventListener('click', () => navigate(+1))
-  document.getElementById('nav-date')?.addEventListener('change', e => jumpToDate(e.target.value))
+  document.getElementById('nav-date')?.addEventListener('change', e => jumpToDate((e.target as HTMLInputElement).value))
   document.getElementById('nav-day')?.addEventListener('change', e => {
-    const day = parseInt(e.target.value, 10)
+    const day = parseInt((e.target as HTMLInputElement).value, 10)
     if (isNaN(day)) return
     const reading = _readings.find(r => r.day === day)
     if (!reading) return
@@ -205,7 +206,7 @@ function renderNav() {
   })
 }
 
-function renderReading(reading) {
+function renderReading(reading: Reading | null): void {
   const container = document.getElementById('reading-card')
   if (!container) return
 
@@ -220,18 +221,19 @@ function renderReading(reading) {
 
   const copyAllBtn = document.getElementById('copy-all')
   if (copyAllBtn) {
+    const btn = copyAllBtn as HTMLButtonElement
     if (!reading) {
-      copyAllBtn.classList.add('hidden')
-      copyAllBtn.onclick = null
+      btn.classList.add('hidden')
+      btn.onclick = null
     } else {
-      copyAllBtn.classList.remove('hidden')
-      copyAllBtn.onclick = e => copyToClipboard(buildSummary(reading), e.currentTarget)
+      btn.classList.remove('hidden')
+      btn.onclick = e => copyToClipboard(buildSummary(reading), e.currentTarget as HTMLButtonElement)
     }
   }
 
   if (!reading) {
     const now = viewDate()
-    let message
+    let message: string
     if (now < PLAN_START) {
       message = `The reading plan begins on <strong>28 March 2026</strong>. See you then!`
     } else if (now > PLAN_END) {
@@ -295,12 +297,12 @@ function renderReading(reading) {
       </div>` : ''}
     </div>`
 
-  document.getElementById('copy-ot')?.addEventListener('click', e => copyToClipboard(reading.ot, e.currentTarget))
-  document.getElementById('copy-psalm')?.addEventListener('click', e => copyToClipboard(reading.psalmProverb, e.currentTarget))
-  document.getElementById('copy-nt')?.addEventListener('click', e => copyToClipboard(reading.nt, e.currentTarget))
+  document.getElementById('copy-ot')?.addEventListener('click', e => copyToClipboard(reading.ot, e.currentTarget as HTMLButtonElement))
+  document.getElementById('copy-psalm')?.addEventListener('click', e => copyToClipboard(reading.psalmProverb, e.currentTarget as HTMLButtonElement))
+  document.getElementById('copy-nt')?.addEventListener('click', e => copyToClipboard(reading.nt, e.currentTarget as HTMLButtonElement))
 }
 
-function renderNotifications() {
+function renderNotifications(): void {
   const section = document.getElementById('notifications-section')
   if (!section) return
 
@@ -372,21 +374,23 @@ function renderNotifications() {
 
   document.getElementById('notif-time')?.addEventListener('change', e => {
     if (enabled) {
-      updateTime(e.target.value)
-      document.getElementById('notif-status').textContent =
-        `✓ Notifications enabled at ${format24h(e.target.value)}`
+      updateTime((e.target as HTMLInputElement).value)
+      const status = document.getElementById('notif-status')
+      if (status) status.textContent = `✓ Notifications enabled at ${format24h((e.target as HTMLInputElement).value)}`
     }
   })
 
   document.getElementById('btn-enable')?.addEventListener('click', async () => {
-    const time = document.getElementById('notif-time').value
+    const time = (document.getElementById('notif-time') as HTMLInputElement).value
     const result = await enable(time)
     if (result.ok) {
       renderNotifications()
     } else if (result.reason === 'denied') {
-      document.getElementById('notif-status').textContent =
-        '⚠️ Permission denied. Please allow notifications in your browser settings.'
-      document.getElementById('notif-status').className = 'text-sm text-amber-600'
+      const status = document.getElementById('notif-status')
+      if (status) {
+        status.textContent = '⚠️ Permission denied. Please allow notifications in your browser settings.'
+        status.className = 'text-sm text-amber-600'
+      }
     }
   })
 

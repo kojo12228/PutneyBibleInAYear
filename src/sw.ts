@@ -2,6 +2,8 @@ import { precacheAndRoute } from 'workbox-precaching'
 import { registerRoute } from 'workbox-routing'
 import { CacheFirst, NetworkFirst } from 'workbox-strategies'
 
+declare const self: ServiceWorkerGlobalScope
+
 // Injected by vite-plugin-pwa at build time
 precacheAndRoute(self.__WB_MANIFEST)
 
@@ -19,21 +21,29 @@ registerRoute(
   new NetworkFirst({ cacheName: 'data-cache' })
 )
 
+interface ShowNotificationMessage {
+  type: 'SHOW_NOTIFICATION'
+  title: string
+  body: string
+  tag?: string
+}
+
 // Show a notification on behalf of the page
-self.addEventListener('message', event => {
-  if (event.data?.type === 'SHOW_NOTIFICATION') {
-    const { title, body, tag } = event.data
+self.addEventListener('message', (event: ExtendableMessageEvent) => {
+  const data = event.data as ShowNotificationMessage
+  if (data?.type === 'SHOW_NOTIFICATION') {
+    const { title, body, tag } = data
     self.registration.showNotification(title, {
       body,
       icon: './icon-192.png',
       badge: './icon-192.png',
-      tag: tag || 'daily-reading',
+      tag: tag ?? 'daily-reading',
     })
   }
 })
 
 // Focus or open the app when a notification is clicked
-self.addEventListener('notificationclick', event => {
+self.addEventListener('notificationclick', (event: NotificationEvent) => {
   event.notification.close()
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clients => {
