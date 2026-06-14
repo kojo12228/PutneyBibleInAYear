@@ -1,4 +1,4 @@
-import type { Reading } from './types'
+import type { Reading } from "./types";
 
 const MONTHS: Record<string, number> = {
   January: 1,
@@ -13,29 +13,34 @@ const MONTHS: Record<string, number> = {
   October: 10,
   November: 11,
   December: 12,
-}
+};
 
-function parseCsvDate(str: string): { day: number; month: number; year: number } {
-  const [d, m, y] = str.trim().split(' ')
-  return { day: parseInt(d, 10), month: MONTHS[m], year: parseInt(y, 10) }
+function parseCsvDate(str: string): {
+  day: number;
+  month: number;
+  year: number;
+} {
+  const [d, m, y] = str.trim().split(" ");
+  return { day: parseInt(d, 10), month: MONTHS[m], year: parseInt(y, 10) };
 }
 
 function dateKey(day: number, month: number, year: number): string {
-  return `${year}-${month}-${day}`
+  return `${year}-${month}-${day}`;
 }
 
 function todayKey(): string {
-  const n = new Date()
-  return dateKey(n.getDate(), n.getMonth() + 1, n.getFullYear())
+  const n = new Date();
+  return dateKey(n.getDate(), n.getMonth() + 1, n.getFullYear());
 }
 
 export async function loadReadings(): Promise<Reading[]> {
-  const res = await fetch('./readings.csv')
-  const text = await res.text()
-  const lines = text.trim().split('\n').slice(1) // skip header row
+  const res = await fetch("./readings.csv");
+  const text = await res.text();
+  const lines = text.trim().split("\n").slice(1); // skip header row
   return lines.map((line) => {
-    const [day, date, dayOfWeek, ot, psalmProverb, nt, audioRef] = line.split(',')
-    const parsed = parseCsvDate(date)
+    const [day, date, dayOfWeek, ot, psalmProverb, nt, audioRef] =
+      line.split(",");
+    const parsed = parseCsvDate(date);
     return {
       day: parseInt(day, 10),
       date,
@@ -45,16 +50,16 @@ export async function loadReadings(): Promise<Reading[]> {
       nt,
       audioRef: audioRef.trim(),
       _key: dateKey(parsed.day, parsed.month, parsed.year),
-    }
-  })
+    };
+  });
 }
 
 export function findToday(readings: Reading[]): Reading | null {
-  const key = todayKey()
-  return readings.find((r) => r._key === key) ?? null
+  const key = todayKey();
+  return readings.find((r) => r._key === key) ?? null;
 }
 
 export function findByDate(readings: Reading[], date: Date): Reading | null {
-  const key = dateKey(date.getDate(), date.getMonth() + 1, date.getFullYear())
-  return readings.find((r) => r._key === key) ?? null
+  const key = dateKey(date.getDate(), date.getMonth() + 1, date.getFullYear());
+  return readings.find((r) => r._key === key) ?? null;
 }

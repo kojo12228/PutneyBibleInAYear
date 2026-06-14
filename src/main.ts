@@ -1,5 +1,5 @@
-import './style.css'
-import { loadReadings, findToday, findByDate } from './readings'
+import "./style.css";
+import { loadReadings, findToday, findByDate } from "./readings";
 import {
   getSavedTime,
   isEnabled,
@@ -8,157 +8,160 @@ import {
   updateTime,
   resumeSchedule,
   showIfNotYetToday,
-} from './notifications'
-import type { Reading } from './types'
+} from "./notifications";
+import type { Reading } from "./types";
 
-const PLAN_START = new Date('2026-03-28')
-const PLAN_END = new Date('2027-03-27')
+const PLAN_START = new Date("2026-03-28");
+const PLAN_END = new Date("2027-03-27");
 
 // Format an "HH:MM" string explicitly as 24-hour (e.g. "08:00", "20:30")
 function format24h(time: string | null): string {
-  if (!time) return ''
-  const [h, m] = time.split(':')
-  return `${h.padStart(2, '0')}:${m.padStart(2, '0')}`
+  if (!time) return "";
+  const [h, m] = time.split(":");
+  return `${h.padStart(2, "0")}:${m.padStart(2, "0")}`;
 }
 
 function ordinal(n: number): string {
-  if (n >= 11 && n <= 13) return `${n}th`
+  if (n >= 11 && n <= 13) return `${n}th`;
   switch (n % 10) {
     case 1:
-      return `${n}st`
+      return `${n}st`;
     case 2:
-      return `${n}nd`
+      return `${n}nd`;
     case 3:
-      return `${n}rd`
+      return `${n}rd`;
     default:
-      return `${n}th`
+      return `${n}th`;
   }
 }
 
 function buildSummary(reading: Reading): string {
-  const [dayStr, monthStr] = reading.date.trim().split(' ')
+  const [dayStr, monthStr] = reading.date.trim().split(" ");
   const header = reading.audioRef
     ? `${ordinal(parseInt(dayStr, 10))} ${monthStr} (audio Bible ref: ${reading.audioRef})`
-    : `${ordinal(parseInt(dayStr, 10))} ${monthStr}`
-  return `${header}\n\n${reading.ot}\n${reading.psalmProverb}\n${reading.nt}`
+    : `${ordinal(parseInt(dayStr, 10))} ${monthStr}`;
+  return `${header}\n\n${reading.ot}\n${reading.psalmProverb}\n${reading.nt}`;
 }
 
-async function copyToClipboard(text: string, btn: HTMLButtonElement): Promise<void> {
+async function copyToClipboard(
+  text: string,
+  btn: HTMLButtonElement,
+): Promise<void> {
   try {
-    await navigator.clipboard.writeText(text)
+    await navigator.clipboard.writeText(text);
   } catch {
-    return
+    return;
   }
-  const original = btn.innerHTML
-  btn.innerHTML = `<svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>`
-  btn.disabled = true
+  const original = btn.innerHTML;
+  btn.innerHTML = `<svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>`;
+  btn.disabled = true;
   setTimeout(() => {
-    btn.innerHTML = original
-    btn.disabled = false
-  }, 1500)
+    btn.innerHTML = original;
+    btn.disabled = false;
+  }, 1500);
 }
 
-const CLIPBOARD_SVG = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>`
+const CLIPBOARD_SVG = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>`;
 
 // Navigation state — null means "today"
-let _viewDate: Date | null = null
-let _readings: Reading[] = []
+let _viewDate: Date | null = null;
+let _readings: Reading[] = [];
 
 function viewDate(): Date {
-  return _viewDate ?? new Date()
+  return _viewDate ?? new Date();
 }
 
 function isToday(): boolean {
-  if (!_viewDate) return true
-  const t = new Date()
+  if (!_viewDate) return true;
+  const t = new Date();
   return (
     _viewDate.getFullYear() === t.getFullYear() &&
     _viewDate.getMonth() === t.getMonth() &&
     _viewDate.getDate() === t.getDate()
-  )
+  );
 }
 
 // Read the ?day= query param and return the corresponding Date, or null for today
 function dateFromQuery(): Date | null {
-  const param = new URLSearchParams(window.location.search).get('day')
-  if (!param || param === 'today') return null
-  const reading = _readings.find((r) => r.day === parseInt(param, 10))
-  if (!reading) return null
-  const parsed = reading._key.split('-').map(Number) // [year, month, day]
-  return new Date(parsed[0], parsed[1] - 1, parsed[2])
+  const param = new URLSearchParams(window.location.search).get("day");
+  if (!param || param === "today") return null;
+  const reading = _readings.find((r) => r.day === parseInt(param, 10));
+  if (!reading) return null;
+  const parsed = reading._key.split("-").map(Number); // [year, month, day]
+  return new Date(parsed[0], parsed[1] - 1, parsed[2]);
 }
 
 // Update _viewDate and push a new history entry
 function setViewDate(date: Date | null): void {
-  const t = new Date()
+  const t = new Date();
   const isNowToday =
     !date ||
     (date.getFullYear() === t.getFullYear() &&
       date.getMonth() === t.getMonth() &&
-      date.getDate() === t.getDate())
-  _viewDate = isNowToday ? null : date
+      date.getDate() === t.getDate());
+  _viewDate = isNowToday ? null : date;
   const qs = _viewDate
     ? `?day=${_readings.find((r) => r._key === `${_viewDate!.getFullYear()}-${_viewDate!.getMonth() + 1}-${_viewDate!.getDate()}`)?.day}`
-    : '?'
-  history.pushState(null, '', qs)
+    : "?";
+  history.pushState(null, "", qs);
 }
 
 async function init(): Promise<void> {
-  _readings = await loadReadings()
-  _viewDate = dateFromQuery()
+  _readings = await loadReadings();
+  _viewDate = dateFromQuery();
 
-  renderReading(findByDate(_readings, viewDate()))
-  renderNav()
-  renderNotifications()
-  resumeSchedule()
-  showIfNotYetToday(findToday(_readings))
+  renderReading(findByDate(_readings, viewDate()));
+  renderNav();
+  renderNotifications();
+  resumeSchedule();
+  showIfNotYetToday(findToday(_readings));
 
-  window.addEventListener('popstate', () => {
-    _viewDate = dateFromQuery()
-    renderReading(findByDate(_readings, viewDate()))
-    renderNav()
-  })
+  window.addEventListener("popstate", () => {
+    _viewDate = dateFromQuery();
+    renderReading(findByDate(_readings, viewDate()));
+    renderNav();
+  });
 }
 
 function navigate(offsetDays: number): void {
-  const next = new Date(viewDate())
-  next.setDate(next.getDate() + offsetDays)
-  if (next < PLAN_START || next > PLAN_END) return
-  setViewDate(next)
-  renderReading(findByDate(_readings, viewDate()))
-  renderNav()
+  const next = new Date(viewDate());
+  next.setDate(next.getDate() + offsetDays);
+  if (next < PLAN_START || next > PLAN_END) return;
+  setViewDate(next);
+  renderReading(findByDate(_readings, viewDate()));
+  renderNav();
 }
 
 function jumpToDate(dateStr: string): void {
   // dateStr is "YYYY-MM-DD" from the date input
-  const [y, m, d] = dateStr.split('-').map(Number)
-  const target = new Date(y, m - 1, d)
-  if (target < PLAN_START || target > PLAN_END) return
-  setViewDate(target)
-  renderReading(findByDate(_readings, viewDate()))
-  renderNav()
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const target = new Date(y, m - 1, d);
+  if (target < PLAN_START || target > PLAN_END) return;
+  setViewDate(target);
+  renderReading(findByDate(_readings, viewDate()));
+  renderNav();
 }
 
 function renderNav(): void {
-  const container = document.getElementById('day-nav')
-  if (!container) return
+  const container = document.getElementById("day-nav");
+  if (!container) return;
 
-  const current = viewDate()
-  const atStart = current <= PLAN_START
-  const atEnd = current >= PLAN_END
+  const current = viewDate();
+  const atStart = current <= PLAN_START;
+  const atEnd = current >= PLAN_END;
 
   // Format date value for the input as YYYY-MM-DD
-  const pad = (n: number) => String(n).padStart(2, '0')
-  const inputVal = `${current.getFullYear()}-${pad(current.getMonth() + 1)}-${pad(current.getDate())}`
-  const minVal = `${PLAN_START.getFullYear()}-${pad(PLAN_START.getMonth() + 1)}-${pad(PLAN_START.getDate())}`
-  const maxVal = `${PLAN_END.getFullYear()}-${pad(PLAN_END.getMonth() + 1)}-${pad(PLAN_END.getDate())}`
-  const currentDay = findByDate(_readings, current)?.day ?? ''
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const inputVal = `${current.getFullYear()}-${pad(current.getMonth() + 1)}-${pad(current.getDate())}`;
+  const minVal = `${PLAN_START.getFullYear()}-${pad(PLAN_START.getMonth() + 1)}-${pad(PLAN_START.getDate())}`;
+  const maxVal = `${PLAN_END.getFullYear()}-${pad(PLAN_END.getMonth() + 1)}-${pad(PLAN_END.getDate())}`;
+  const currentDay = findByDate(_readings, current)?.day ?? "";
 
   container.innerHTML = `
     <div class="flex items-center gap-2">
       <button id="nav-prev" aria-label="Previous day"
         class="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
-        ${atStart ? 'disabled' : ''}>
+        ${atStart ? "disabled" : ""}>
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
         </svg>
@@ -176,88 +179,97 @@ function renderNav(): void {
 
       <button id="nav-next" aria-label="Next day"
         class="p-1.5 rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
-        ${atEnd ? 'disabled' : ''}>
+        ${atEnd ? "disabled" : ""}>
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
         </svg>
       </button>
 
       <a id="nav-today" href="?"
-        class="ml-auto text-xs font-medium transition-colors ${isToday() ? 'text-gray-300 pointer-events-none' : 'text-methodist-red hover:underline'}"
+        class="ml-auto text-xs font-medium transition-colors ${isToday() ? "text-gray-300 pointer-events-none" : "text-methodist-red hover:underline"}"
         aria-disabled="${isToday()}">
         Go to today's reading
       </a>
     </div>
-  `
+  `;
 
-  document.getElementById('nav-prev')?.addEventListener('click', () => navigate(-1))
-  document.getElementById('nav-next')?.addEventListener('click', () => navigate(+1))
   document
-    .getElementById('nav-date')
-    ?.addEventListener('change', (e) => jumpToDate((e.target as HTMLInputElement).value))
-  document.getElementById('nav-day')?.addEventListener('change', (e) => {
-    const day = parseInt((e.target as HTMLInputElement).value, 10)
-    if (isNaN(day)) return
-    const reading = _readings.find((r) => r.day === day)
-    if (!reading) return
-    const [y, m, d] = reading._key.split('-').map(Number)
-    setViewDate(new Date(y, m - 1, d))
-    renderReading(reading)
-    renderNav()
-  })
-  document.getElementById('nav-today')?.addEventListener('click', (e) => {
-    if (isToday()) return
-    e.preventDefault()
-    setViewDate(null)
-    renderReading(findToday(_readings))
-    renderNav()
-  })
+    .getElementById("nav-prev")
+    ?.addEventListener("click", () => navigate(-1));
+  document
+    .getElementById("nav-next")
+    ?.addEventListener("click", () => navigate(+1));
+  document
+    .getElementById("nav-date")
+    ?.addEventListener("change", (e) =>
+      jumpToDate((e.target as HTMLInputElement).value),
+    );
+  document.getElementById("nav-day")?.addEventListener("change", (e) => {
+    const day = parseInt((e.target as HTMLInputElement).value, 10);
+    if (isNaN(day)) return;
+    const reading = _readings.find((r) => r.day === day);
+    if (!reading) return;
+    const [y, m, d] = reading._key.split("-").map(Number);
+    setViewDate(new Date(y, m - 1, d));
+    renderReading(reading);
+    renderNav();
+  });
+  document.getElementById("nav-today")?.addEventListener("click", (e) => {
+    if (isToday()) return;
+    e.preventDefault();
+    setViewDate(null);
+    renderReading(findToday(_readings));
+    renderNav();
+  });
 }
 
 function renderReading(reading: Reading | null): void {
-  const container = document.getElementById('reading-card')
-  if (!container) return
+  const container = document.getElementById("reading-card");
+  if (!container) return;
 
-  const el = document.getElementById('reading-heading')
+  const el = document.getElementById("reading-heading");
   if (el) {
     el.textContent = isToday()
       ? "Today's Reading"
-      : viewDate().toLocaleDateString('en-GB', {
-          weekday: 'long',
-          day: 'numeric',
-          month: 'long',
-          year: 'numeric',
-        })
+      : viewDate().toLocaleDateString("en-GB", {
+          weekday: "long",
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        });
   }
 
-  const copyAllBtn = document.getElementById('copy-all')
+  const copyAllBtn = document.getElementById("copy-all");
   if (copyAllBtn) {
-    const btn = copyAllBtn as HTMLButtonElement
+    const btn = copyAllBtn as HTMLButtonElement;
     if (!reading) {
-      btn.classList.add('hidden')
-      btn.onclick = null
+      btn.classList.add("hidden");
+      btn.onclick = null;
     } else {
-      btn.classList.remove('hidden')
+      btn.classList.remove("hidden");
       btn.onclick = (e) =>
-        copyToClipboard(buildSummary(reading), e.currentTarget as HTMLButtonElement)
+        copyToClipboard(
+          buildSummary(reading),
+          e.currentTarget as HTMLButtonElement,
+        );
     }
   }
 
   if (!reading) {
-    const now = viewDate()
-    let message: string
+    const now = viewDate();
+    let message: string;
     if (now < PLAN_START) {
-      message = `The reading plan begins on <strong>28 March 2026</strong>. See you then!`
+      message = `The reading plan begins on <strong>28 March 2026</strong>. See you then!`;
     } else if (now > PLAN_END) {
-      message = `The reading plan concluded on <strong>27 March 2027</strong>. Well done for completing the journey!`
+      message = `The reading plan concluded on <strong>27 March 2027</strong>. Well done for completing the journey!`;
     } else {
-      message = `No reading found for this date.`
+      message = `No reading found for this date.`;
     }
     container.innerHTML = `
       <div class="text-center py-8 text-gray-500">
         <p class="text-lg">${message}</p>
-      </div>`
-    return
+      </div>`;
+    return;
   }
 
   container.innerHTML = `
@@ -309,34 +321,37 @@ function renderReading(reading: Reading | null): void {
           &nbsp;·&nbsp; NIV read by David Suchet (Bible in One Year — Audible)
         </span>
       </div>`
-          : ''
+          : ""
       }
-    </div>`
+    </div>`;
 
   document
-    .getElementById('copy-ot')
-    ?.addEventListener('click', (e) =>
-      copyToClipboard(reading.ot, e.currentTarget as HTMLButtonElement)
-    )
+    .getElementById("copy-ot")
+    ?.addEventListener("click", (e) =>
+      copyToClipboard(reading.ot, e.currentTarget as HTMLButtonElement),
+    );
   document
-    .getElementById('copy-psalm')
-    ?.addEventListener('click', (e) =>
-      copyToClipboard(reading.psalmProverb, e.currentTarget as HTMLButtonElement)
-    )
+    .getElementById("copy-psalm")
+    ?.addEventListener("click", (e) =>
+      copyToClipboard(
+        reading.psalmProverb,
+        e.currentTarget as HTMLButtonElement,
+      ),
+    );
   document
-    .getElementById('copy-nt')
-    ?.addEventListener('click', (e) =>
-      copyToClipboard(reading.nt, e.currentTarget as HTMLButtonElement)
-    )
+    .getElementById("copy-nt")
+    ?.addEventListener("click", (e) =>
+      copyToClipboard(reading.nt, e.currentTarget as HTMLButtonElement),
+    );
 }
 
 function renderNotifications(): void {
-  const section = document.getElementById('notifications-section')
-  if (!section) return
+  const section = document.getElementById("notifications-section");
+  if (!section) return;
 
-  const savedTime = getSavedTime()
-  const enabled = isEnabled()
-  const notifSupported = 'Notification' in window
+  const savedTime = getSavedTime();
+  const enabled = isEnabled();
+  const notifSupported = "Notification" in window;
 
   section.innerHTML = `
     <h2 class="text-lg font-semibold text-gray-800 mb-4">Daily Notifications</h2>
@@ -347,7 +362,7 @@ function renderNotifications(): void {
       <p class="text-sm text-amber-700 bg-amber-50 rounded-lg p-3">
         Notifications are not supported in this browser.
       </p>`
-        : ''
+        : ""
     }
 
     ${
@@ -361,7 +376,7 @@ function renderNotifications(): void {
           <input
             type="time"
             id="notif-time"
-            value="${savedTime || '08:00'}"
+            value="${savedTime || "08:00"}"
             step="60"
             class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-methodist-red [&::-webkit-date-and-time-value]:text-left"
             style="font-variant-numeric: tabular-nums;"
@@ -371,17 +386,17 @@ function renderNotifications(): void {
 
         <div class="flex gap-3">
           <button id="btn-enable"
-            class="btn-primary ${enabled ? 'hidden' : ''}">
+            class="btn-primary ${enabled ? "hidden" : ""}">
             Enable notifications
           </button>
           <button id="btn-disable"
-            class="btn-secondary ${enabled ? '' : 'hidden'}">
+            class="btn-secondary ${enabled ? "" : "hidden"}">
             Disable notifications
           </button>
         </div>
 
-        <p id="notif-status" class="text-sm ${enabled ? 'text-green-600' : 'text-gray-400'}">
-          ${enabled ? `✓ Notifications enabled at ${format24h(savedTime)}` : 'Notifications are off'}
+        <p id="notif-status" class="text-sm ${enabled ? "text-green-600" : "text-gray-400"}">
+          ${enabled ? `✓ Notifications enabled at ${format24h(savedTime)}` : "Notifications are off"}
         </p>
 
         <!-- iOS instructions -->
@@ -402,40 +417,41 @@ function renderNotifications(): void {
         </details>
       </div>
     `
-        : ''
+        : ""
     }
-  `
+  `;
 
-  if (!notifSupported) return
+  if (!notifSupported) return;
 
-  document.getElementById('notif-time')?.addEventListener('change', (e) => {
+  document.getElementById("notif-time")?.addEventListener("change", (e) => {
     if (enabled) {
-      updateTime((e.target as HTMLInputElement).value)
-      const status = document.getElementById('notif-status')
+      updateTime((e.target as HTMLInputElement).value);
+      const status = document.getElementById("notif-status");
       if (status)
-        status.textContent = `✓ Notifications enabled at ${format24h((e.target as HTMLInputElement).value)}`
+        status.textContent = `✓ Notifications enabled at ${format24h((e.target as HTMLInputElement).value)}`;
     }
-  })
+  });
 
-  document.getElementById('btn-enable')?.addEventListener('click', async () => {
-    const time = (document.getElementById('notif-time') as HTMLInputElement).value
-    const result = await enable(time)
+  document.getElementById("btn-enable")?.addEventListener("click", async () => {
+    const time = (document.getElementById("notif-time") as HTMLInputElement)
+      .value;
+    const result = await enable(time);
     if (result.ok) {
-      renderNotifications()
-    } else if (result.reason === 'denied') {
-      const status = document.getElementById('notif-status')
+      renderNotifications();
+    } else if (result.reason === "denied") {
+      const status = document.getElementById("notif-status");
       if (status) {
         status.textContent =
-          '⚠️ Permission denied. Please allow notifications in your browser settings.'
-        status.className = 'text-sm text-amber-600'
+          "⚠️ Permission denied. Please allow notifications in your browser settings.";
+        status.className = "text-sm text-amber-600";
       }
     }
-  })
+  });
 
-  document.getElementById('btn-disable')?.addEventListener('click', () => {
-    disable()
-    renderNotifications()
-  })
+  document.getElementById("btn-disable")?.addEventListener("click", () => {
+    disable();
+    renderNotifications();
+  });
 }
 
-init()
+init();
