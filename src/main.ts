@@ -359,71 +359,80 @@ function renderNotifications(): void {
   const notifSupported = "Notification" in window;
 
   section.innerHTML = `
-    <h2 class="text-lg font-semibold text-gray-800 mb-4">Daily Notifications</h2>
+    <details class="group">
+      <summary class="flex items-center justify-between cursor-pointer select-none list-none">
+        <h2 class="text-lg font-semibold text-gray-800">Daily Notifications</h2>
+        <svg class="w-5 h-5 text-gray-400 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+        </svg>
+      </summary>
 
-    ${
-      !notifSupported
-        ? `
-      <p class="text-sm text-amber-700 bg-amber-50 rounded-lg p-3">
-        Notifications are not supported in this browser.
-      </p>`
-        : ""
-    }
+      <div class="mt-4">
+        ${
+          !notifSupported
+            ? `
+          <p class="text-sm text-amber-700 bg-amber-50 rounded-lg p-3">
+            Notifications are not supported in this browser.
+          </p>`
+            : ""
+        }
 
-    ${
-      notifSupported
-        ? `
-      <div class="space-y-4">
-        <div class="flex items-center gap-4">
-          <label class="text-sm font-medium text-gray-700 w-28 shrink-0" for="notif-time">
-            Notify me at
-          </label>
-          <input
-            type="time"
-            id="notif-time"
-            value="${savedTime || "08:00"}"
-            step="60"
-            class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-methodist-red [&::-webkit-date-and-time-value]:text-left"
-            style="font-variant-numeric: tabular-nums;"
-          />
-          <span class="text-xs text-gray-400">24hr</span>
-        </div>
+        ${
+          notifSupported
+            ? `
+          <div class="space-y-4">
+            <div class="flex items-center gap-4">
+              <label class="text-sm font-medium text-gray-700 w-28 shrink-0" for="notif-time">
+                Notify me at
+              </label>
+              <input
+                type="time"
+                id="notif-time"
+                value="${savedTime || "08:00"}"
+                step="60"
+                class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-methodist-red [&::-webkit-date-and-time-value]:text-left"
+                style="font-variant-numeric: tabular-nums;"
+              />
+              <span class="text-xs text-gray-400">24hr</span>
+            </div>
 
-        <div class="flex gap-3">
-          <button id="btn-enable"
-            class="btn-primary ${enabled ? "hidden" : ""}">
-            Enable notifications
-          </button>
-          <button id="btn-disable"
-            class="btn-secondary ${enabled ? "" : "hidden"}">
-            Disable notifications
-          </button>
-        </div>
+            <div class="flex gap-3">
+              <button id="btn-enable"
+                class="btn-primary ${enabled ? "hidden" : ""}">
+                Enable notifications
+              </button>
+              <button id="btn-disable"
+                class="btn-secondary ${enabled ? "" : "hidden"}">
+                Disable notifications
+              </button>
+            </div>
 
-        <p id="notif-status" class="text-sm ${enabled ? "text-green-600" : "text-gray-400"}">
-          ${enabled ? `✓ Notifications enabled at ${format24h(savedTime)}` : "Notifications are off"}
-        </p>
+            <p id="notif-status" class="text-sm ${enabled ? "text-green-600" : "text-gray-400"}">
+              ${enabled ? `✓ Notifications enabled at ${format24h(savedTime)}` : "Notifications are off"}
+            </p>
 
-        <!-- iOS instructions -->
-        <details class="mt-4 rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm text-gray-600">
-          <summary class="cursor-pointer font-medium text-gray-700 select-none">
-            📱 Using an iPhone or iPad?
-          </summary>
-          <div class="mt-3 space-y-2">
-            <p>For notifications to work on iOS you must first add this app to your Home Screen:</p>
-            <ol class="list-decimal list-inside space-y-1 ml-1">
-              <li>Tap the <strong>Share</strong> button <span class="text-base">⬆</span> at the bottom of Safari</li>
-              <li>Scroll down and tap <strong>"Add to Home Screen"</strong></li>
-              <li>Tap <strong>Add</strong> in the top right</li>
-              <li>Open the app from your Home Screen and enable notifications here</li>
-            </ol>
-            <p class="text-xs text-gray-500 pt-1">Requires iOS 16.4 or later with Safari.</p>
+            <!-- iOS instructions -->
+            <details class="mt-4 rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm text-gray-600">
+              <summary class="cursor-pointer font-medium text-gray-700 select-none">
+                📱 Using an iPhone or iPad?
+              </summary>
+              <div class="mt-3 space-y-2">
+                <p>For notifications to work on iOS you must first add this app to your Home Screen:</p>
+                <ol class="list-decimal list-inside space-y-1 ml-1">
+                  <li>Tap the <strong>Share</strong> button <span class="text-base">⬆</span> at the bottom of Safari</li>
+                  <li>Scroll down and tap <strong>"Add to Home Screen"</strong></li>
+                  <li>Tap <strong>Add</strong> in the top right</li>
+                  <li>Open the app from your Home Screen and enable notifications here</li>
+                </ol>
+                <p class="text-xs text-gray-500 pt-1">Requires iOS 16.4 or later with Safari.</p>
+              </div>
+            </details>
           </div>
-        </details>
+        `
+            : ""
+        }
       </div>
-    `
-        : ""
-    }
+    </details>
   `;
 
   if (!notifSupported) return;
