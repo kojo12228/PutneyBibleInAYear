@@ -1,5 +1,6 @@
 import "./style.css";
 import { loadReadings, findToday, findByDate } from "./readings";
+import { renderCatchUp } from "./catchup";
 import {
   getSavedTime,
   isEnabled,
@@ -113,6 +114,10 @@ async function init(): Promise<void> {
   renderReading(findByDate(_readings, viewDate()));
   renderNav();
   renderNotifications();
+
+  const catchupSection = document.getElementById("catchup-section");
+  if (catchupSection) renderCatchUp(catchupSection as HTMLElement, _readings);
+
   resumeSchedule();
   showIfNotYetToday(findToday(_readings));
 

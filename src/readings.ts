@@ -63,3 +63,25 @@ export function findByDate(readings: Reading[], date: Date): Reading | null {
   const key = dateKey(date.getDate(), date.getMonth() + 1, date.getFullYear());
   return readings.find((r) => r._key === key) ?? null;
 }
+
+export function findByDateRange(
+  readings: Reading[],
+  start: Date,
+  end: Date,
+): Reading[] {
+  const startTs = new Date(
+    start.getFullYear(),
+    start.getMonth(),
+    start.getDate(),
+  ).getTime();
+  const endTs = new Date(
+    end.getFullYear(),
+    end.getMonth(),
+    end.getDate(),
+  ).getTime();
+  return readings.filter((r) => {
+    const [y, m, d] = r._key.split("-").map(Number);
+    const ts = new Date(y, m - 1, d).getTime();
+    return ts >= startTs && ts <= endTs;
+  });
+}
