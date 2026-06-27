@@ -15,10 +15,10 @@ function parseInputDate(value: string): Date {
   return new Date(y, m - 1, d);
 }
 
-const AUDIO_ICON = `<svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-    d="M11 5L6 9H2v6h4l5 4V5zM15.536 8.464a5 5 0 010 7.072M19.07 4.929a10 10 0 010 14.142"/>
-</svg>`;
+function formatShortDate(key: string): string {
+  const [, m, d] = key.split("-").map(Number);
+  return `${String(d).padStart(2, "0")}/${String(m).padStart(2, "0")}`;
+}
 
 function renderResults(container: HTMLElement, readings: Reading[]): void {
   if (readings.length === 0) {
@@ -27,38 +27,37 @@ function renderResults(container: HTMLElement, readings: Reading[]): void {
   }
 
   const count = readings.length;
-  container.innerHTML =
-    `<p class="text-xs text-gray-400 mb-3">${count} day${count === 1 ? "" : "s"} of readings</p>` +
-    readings
-      .map(
-        (r) => `
-    <div class="reading-row space-y-2">
-      <div>
-        <span class="text-sm font-semibold text-methodist-red">Day ${r.day} — ${r.date.trim()}</span>
-      </div>
-      <div>
-        <div class="reading-label">Old Testament</div>
-        <div class="reading-passage">${r.ot}</div>
-      </div>
-      <div>
-        <div class="reading-label">Psalm / Proverb</div>
-        <div class="reading-passage">${r.psalmProverb}</div>
-      </div>
-      <div>
-        <div class="reading-label">New Testament</div>
-        <div class="reading-passage">${r.nt}</div>
-      </div>
-      ${
-        r.audioRef
-          ? `<div class="flex items-center gap-1.5 text-xs text-gray-500 pt-1 border-t border-gray-100">
-          ${AUDIO_ICON}
-          Audio ref: <strong>${r.audioRef}</strong>
-        </div>`
-          : ""
-      }
-    </div>`,
-      )
-      .join("");
+  const rows = readings
+    .map(
+      (r) => `
+    <tr class="border-t border-gray-100">
+      <td class="py-2 pr-3 text-sm font-semibold text-methodist-red whitespace-nowrap">${r.day}</td>
+      <td class="py-2 pr-3 text-sm text-gray-500 whitespace-nowrap">${formatShortDate(r._key)}</td>
+      <td class="py-2 pr-3 text-sm text-gray-800">${r.ot}</td>
+      <td class="py-2 pr-3 text-sm text-gray-800">${r.psalmProverb}</td>
+      <td class="py-2 pr-3 text-sm text-gray-800">${r.nt}</td>
+      <td class="py-2 text-sm text-gray-400 whitespace-nowrap">${r.audioRef ?? ""}</td>
+    </tr>`,
+    )
+    .join("");
+
+  container.innerHTML = `
+    <p class="text-xs text-gray-400 mb-3">${count} day${count === 1 ? "" : "s"} of readings</p>
+    <div class="overflow-x-auto -mx-5 px-5">
+      <table class="w-full text-left">
+        <thead>
+          <tr>
+            <th class="pb-2 pr-3 text-xs font-semibold uppercase tracking-wide text-methodist-red">Day</th>
+            <th class="pb-2 pr-3 text-xs font-semibold uppercase tracking-wide text-methodist-red">Date</th>
+            <th class="pb-2 pr-3 text-xs font-semibold uppercase tracking-wide text-methodist-red">OT</th>
+            <th class="pb-2 pr-3 text-xs font-semibold uppercase tracking-wide text-methodist-red">Psalm / Proverb</th>
+            <th class="pb-2 pr-3 text-xs font-semibold uppercase tracking-wide text-methodist-red">NT</th>
+            <th class="pb-2 text-xs font-semibold uppercase tracking-wide text-methodist-red">Audio</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
 }
 
 const INPUT_CLASS =
