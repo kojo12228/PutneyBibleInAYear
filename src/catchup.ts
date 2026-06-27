@@ -62,6 +62,9 @@ function renderResults(container: HTMLElement, readings: Reading[]): void {
       .join("");
 }
 
+const INPUT_CLASS =
+  "text-sm border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-methodist-red";
+
 export function renderCatchUp(
   section: HTMLElement,
   allReadings: Reading[],
@@ -73,6 +76,11 @@ export function renderCatchUp(
   const minVal = toInputValue(PLAN_START);
   const maxVal = toInputValue(PLAN_END);
   const todayVal = toInputValue(clampedToday);
+  const todayDay =
+    allReadings.find((r) => {
+      const [y, m, d] = r._key.split("-").map(Number);
+      return toInputValue(new Date(y, m - 1, d)) === todayVal;
+    })?.day ?? allReadings.length;
 
   section.innerHTML = `
     <details class="group">
@@ -85,16 +93,30 @@ export function renderCatchUp(
       <div class="mt-4">
         <div class="flex flex-col sm:flex-row gap-3 mb-4">
           <div class="flex-1">
-            <label class="text-xs font-medium text-gray-500 mb-1 block" for="catchup-from">From</label>
-            <input type="date" id="catchup-from"
-              value="${minVal}" min="${minVal}" max="${maxVal}"
-              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-methodist-red" />
+            <label class="text-xs font-medium text-gray-500 mb-1 block">From</label>
+            <div class="flex items-center gap-1.5">
+              <label class="sr-only" for="catchup-from-day">From day number</label>
+              <input type="number" id="catchup-from-day" value="1" min="1" max="365"
+                class="w-16 text-center ${INPUT_CLASS}" />
+              <span class="text-gray-300 text-sm">/</span>
+              <label class="sr-only" for="catchup-from">From date</label>
+              <input type="date" id="catchup-from"
+                value="${minVal}" min="${minVal}" max="${maxVal}"
+                class="flex-1 ${INPUT_CLASS}" />
+            </div>
           </div>
           <div class="flex-1">
-            <label class="text-xs font-medium text-gray-500 mb-1 block" for="catchup-to">To</label>
-            <input type="date" id="catchup-to"
-              value="${todayVal}" min="${minVal}" max="${maxVal}"
-              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-methodist-red" />
+            <label class="text-xs font-medium text-gray-500 mb-1 block">To</label>
+            <div class="flex items-center gap-1.5">
+              <label class="sr-only" for="catchup-to-day">To day number</label>
+              <input type="number" id="catchup-to-day" value="${todayDay}" min="1" max="365"
+                class="w-16 text-center ${INPUT_CLASS}" />
+              <span class="text-gray-300 text-sm">/</span>
+              <label class="sr-only" for="catchup-to">To date</label>
+              <input type="date" id="catchup-to"
+                value="${todayVal}" min="${minVal}" max="${maxVal}"
+                class="flex-1 ${INPUT_CLASS}" />
+            </div>
           </div>
         </div>
         <div id="catchup-results" class="space-y-3"></div>
@@ -102,9 +124,20 @@ export function renderCatchUp(
     </details>
   `;
 
+  const fromDayInput =
+    section.querySelector<HTMLInputElement>("#catchup-from-day")!;
   const fromInput = section.querySelector<HTMLInputElement>("#catchup-from")!;
+  const toDayInput =
+    section.querySelector<HTMLInputElement>("#catchup-to-day")!;
   const toInput = section.querySelector<HTMLInputElement>("#catchup-to")!;
   const results = section.querySelector<HTMLElement>("#catchup-results")!;
+
+  function readingByDate(dateVal: string): Reading | undefined {
+    return allReadings.find((r) => {
+      const [y, m, d] = r._key.split("-").map(Number);
+      return toInputValue(new Date(y, m - 1, d)) === dateVal;
+    });
+  }
 
   function update() {
     if (!fromInput.value || !toInput.value) return;
@@ -117,7 +150,37 @@ export function renderCatchUp(
     renderResults(results, findByDateRange(allReadings, start, end));
   }
 
-  fromInput.addEventListener("change", update);
-  toInput.addEventListener("change", update);
+  fromDayInput.addEventListener("change", (e) => {
+    const reading = allReadings.find(
+      (r) => r.day === parseInt((e.target as HTMLInputElement).value, 10),
+    );
+    if (!reading) return;
+    const [y, m, d] = reading._key.split("-").map(Number);
+    fromInput.value = toInputValue(new Date(y, m - 1, d));
+    update();
+  });
+
+  fromInput.addEventListener("change", (e) => {
+    const reading = readingByDate((e.target as HTMLInputElement).value);
+    if (reading) fromDayInput.value = String(reading.day);
+    update();
+  });
+
+  toDayInput.addEventListener("change", (e) => {
+    const reading = allReadings.find(
+      (r) => r.day === parseInt((e.target as HTMLInputElement).value, 10),
+    );
+    if (!reading) return;
+    const [y, m, d] = reading._key.split("-").map(Number);
+    toInput.value = toInputValue(new Date(y, m - 1, d));
+    update();
+  });
+
+  toInput.addEventListener("change", (e) => {
+    const reading = readingByDate((e.target as HTMLInputElement).value);
+    if (reading) toDayInput.value = String(reading.day);
+    update();
+  });
+
   update();
 }
