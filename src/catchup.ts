@@ -74,7 +74,7 @@ export function renderCatchUp(
     today > PLAN_END ? PLAN_END : today < PLAN_START ? PLAN_START : today;
 
   const sevenDaysAgo = new Date(clampedToday);
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
   const defaultFrom = sevenDaysAgo < PLAN_START ? PLAN_START : sevenDaysAgo;
 
   const minVal = toInputValue(PLAN_START);
