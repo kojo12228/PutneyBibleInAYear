@@ -75,22 +75,31 @@ export function renderCatchUp(
   const todayVal = toInputValue(clampedToday);
 
   section.innerHTML = `
-    <h2 class="text-lg font-semibold text-gray-800 mb-4">Catch Up</h2>
-    <div class="flex flex-col sm:flex-row gap-3 mb-4">
-      <div class="flex-1">
-        <label class="text-xs font-medium text-gray-500 mb-1 block" for="catchup-from">From</label>
-        <input type="date" id="catchup-from"
-          value="${minVal}" min="${minVal}" max="${maxVal}"
-          class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-methodist-red" />
+    <details class="group">
+      <summary class="flex items-center justify-between cursor-pointer select-none list-none">
+        <h2 class="text-lg font-semibold text-gray-800">Catch Up</h2>
+        <svg class="w-5 h-5 text-gray-400 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+        </svg>
+      </summary>
+      <div class="mt-4">
+        <div class="flex flex-col sm:flex-row gap-3 mb-4">
+          <div class="flex-1">
+            <label class="text-xs font-medium text-gray-500 mb-1 block" for="catchup-from">From</label>
+            <input type="date" id="catchup-from"
+              value="${minVal}" min="${minVal}" max="${maxVal}"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-methodist-red" />
+          </div>
+          <div class="flex-1">
+            <label class="text-xs font-medium text-gray-500 mb-1 block" for="catchup-to">To</label>
+            <input type="date" id="catchup-to"
+              value="${todayVal}" min="${minVal}" max="${maxVal}"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-methodist-red" />
+          </div>
+        </div>
+        <div id="catchup-results" class="space-y-3"></div>
       </div>
-      <div class="flex-1">
-        <label class="text-xs font-medium text-gray-500 mb-1 block" for="catchup-to">To</label>
-        <input type="date" id="catchup-to"
-          value="${todayVal}" min="${minVal}" max="${maxVal}"
-          class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-methodist-red" />
-      </div>
-    </div>
-    <div id="catchup-results" class="space-y-3"></div>
+    </details>
   `;
 
   const fromInput = section.querySelector<HTMLInputElement>("#catchup-from")!;
