@@ -33,9 +33,8 @@ function renderResults(container: HTMLElement, readings: Reading[]): void {
       .map(
         (r) => `
     <div class="reading-row space-y-2">
-      <div class="flex items-center justify-between">
+      <div>
         <span class="text-sm font-semibold text-methodist-red">Day ${r.day} — ${r.date.trim()}</span>
-        <span class="text-xs text-gray-400">${r.dayOfWeek}</span>
       </div>
       <div>
         <div class="reading-label">Old Testament</div>
