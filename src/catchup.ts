@@ -73,14 +73,24 @@ export function renderCatchUp(
   const clampedToday =
     today > PLAN_END ? PLAN_END : today < PLAN_START ? PLAN_START : today;
 
+  const sevenDaysAgo = new Date(clampedToday);
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  const defaultFrom = sevenDaysAgo < PLAN_START ? PLAN_START : sevenDaysAgo;
+
   const minVal = toInputValue(PLAN_START);
   const maxVal = toInputValue(PLAN_END);
   const todayVal = toInputValue(clampedToday);
-  const todayDay =
-    allReadings.find((r) => {
+  const fromVal = toInputValue(defaultFrom);
+
+  function dayForDate(dateVal: string): number | undefined {
+    return allReadings.find((r) => {
       const [y, m, d] = r._key.split("-").map(Number);
-      return toInputValue(new Date(y, m - 1, d)) === todayVal;
-    })?.day ?? allReadings.length;
+      return toInputValue(new Date(y, m - 1, d)) === dateVal;
+    })?.day;
+  }
+
+  const fromDay = dayForDate(fromVal) ?? 1;
+  const todayDay = dayForDate(todayVal) ?? allReadings.length;
 
   section.innerHTML = `
     <details class="group">
@@ -96,12 +106,12 @@ export function renderCatchUp(
             <label class="text-xs font-medium text-gray-500 mb-1 block">From</label>
             <div class="flex items-center gap-1.5">
               <label class="sr-only" for="catchup-from-day">From day number</label>
-              <input type="number" id="catchup-from-day" value="1" min="1" max="365"
+              <input type="number" id="catchup-from-day" value="${fromDay}" min="1" max="365"
                 class="w-16 text-center ${INPUT_CLASS}" />
               <span class="text-gray-300 text-sm">/</span>
               <label class="sr-only" for="catchup-from">From date</label>
               <input type="date" id="catchup-from"
-                value="${minVal}" min="${minVal}" max="${maxVal}"
+                value="${fromVal}" min="${minVal}" max="${maxVal}"
                 class="flex-1 ${INPUT_CLASS}" />
             </div>
           </div>
@@ -132,13 +142,6 @@ export function renderCatchUp(
   const toInput = section.querySelector<HTMLInputElement>("#catchup-to")!;
   const results = section.querySelector<HTMLElement>("#catchup-results")!;
 
-  function readingByDate(dateVal: string): Reading | undefined {
-    return allReadings.find((r) => {
-      const [y, m, d] = r._key.split("-").map(Number);
-      return toInputValue(new Date(y, m - 1, d)) === dateVal;
-    });
-  }
-
   function update() {
     if (!fromInput.value || !toInput.value) return;
     const start = parseInputDate(fromInput.value);
@@ -161,8 +164,8 @@ export function renderCatchUp(
   });
 
   fromInput.addEventListener("change", (e) => {
-    const reading = readingByDate((e.target as HTMLInputElement).value);
-    if (reading) fromDayInput.value = String(reading.day);
+    const day = dayForDate((e.target as HTMLInputElement).value);
+    if (day !== undefined) fromDayInput.value = String(day);
     update();
   });
 
@@ -177,8 +180,8 @@ export function renderCatchUp(
   });
 
   toInput.addEventListener("change", (e) => {
-    const reading = readingByDate((e.target as HTMLInputElement).value);
-    if (reading) toDayInput.value = String(reading.day);
+    const day = dayForDate((e.target as HTMLInputElement).value);
+    if (day !== undefined) toDayInput.value = String(day);
     update();
   });
 
